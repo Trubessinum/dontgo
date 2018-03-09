@@ -9,6 +9,12 @@ import (
     "github.com/go-gl/glfw/v3.2/glfw"
 )
 
+var triangle = []float32{
+    0, 0.5, 0,
+    -0.5, -0.5, 0,
+    0.5, -0.5, 0,
+}
+
 func main() {
     const width = 400
     const height = 300
@@ -20,14 +26,19 @@ func main() {
 
     program := initOpenGL();
 
+    vao := makeVao(triangle)
+    num := int32(len(triangle) / 3)
     for !window.ShouldClose() {
-        draw(window, program)
+        draw(vao, num, window, program)
     }
 }
 
-func draw(window *glfw.Window, program uint32) {
+func draw(vao uint32, num int32, window *glfw.Window, program uint32) {
     gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
     gl.UseProgram(program)
+
+    gl.BindVertexArray(vao)
+    gl.DrawArrays(gl.TRIANGLES, 0, num)
 
     glfw.PollEvents()
     window.SwapBuffers()
@@ -60,10 +71,21 @@ func initOpenGL() uint32 {
         panic(err)
     }
 
+    vertexShader, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
+    if err != nil {
+        panic(err)
+    }
+    fragmentShader, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
+    if err != nil {
+        panic(err)
+    }
+
     version := gl.GoStr(gl.GetString(gl.VERSION))
     fmt.Println("OpenGL version", version)
 
     prog := gl.CreateProgram()
+    gl.AttachShader(prog, vertexShader)
+    gl.AttachShader(prog, fragmentShader)
     gl.LinkProgram(prog)
 
     gl.Enable(gl.DEPTH_TEST)
@@ -71,4 +93,20 @@ func initOpenGL() uint32 {
     gl.ClearColor(0.0, 0.0, 0.4, 1.0)
 
     return prog
+}
+
+func makeVao(points []float32) uint32 {
+    var vbo uint32
+    gl.GenBuffers(1, &vbo)
+    gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+    gl.BufferData(gl.ARRAY_BUFFER, 4*len(points), gl.Ptr(points), gl.STATIC_DRAW)
+
+    var vao uint32
+    gl.GenVertexArrays(1, &vao)
+    gl.BindVertexArray(vao)
+    gl.EnableVertexAttribArray(0)
+    gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
+
+    return vao
 }
