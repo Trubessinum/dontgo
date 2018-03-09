@@ -7,12 +7,30 @@ import (
 
     "github.com/go-gl/gl/v4.1-core/gl"
     "github.com/go-gl/glfw/v3.2/glfw"
+    "github.com/go-gl/mathgl/mgl32"
 )
 
-var triangle = []float32{
+var pyramidVertices = []float32{
+    // front
     0, 0.5, 0,
-    -0.5, -0.5, 0,
-    0.5, -0.5, 0,
+    -0.5, -0.5, -0.5,
+    0.5, -0.5, -0.5,
+
+    // back
+    0, 0.5, 0,
+    0.5, -0.5, 0.5,
+    -0.5, -0.5, 0.5,
+
+    // left
+    0, 0.5, 0,
+    -0.5, -0.5, 0.5,
+    -0.5, -0.5, -0.5,
+
+    // right
+    0, 0.5, 0,
+    0.5, -0.5, -0.5,
+    0.5, -0.5, 0.5,
+
 }
 
 func main() {
@@ -26,15 +44,37 @@ func main() {
 
     program := initOpenGL();
 
-    vao := makeVao(triangle)
-    num := int32(len(triangle) / 3)
+//---------------
+
+    model := mgl32.Ident4()
+    modelUniform := gl.GetUniformLocation(program, gl.Str("model\x00"))
+    gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
+
+//---------------
+
+    vao := makeVao(pyramidVertices)
+    num := int32(len(pyramidVertices) / 3)
+
+    angle := 0.0
+    previousTime := glfw.GetTime()
+
     for !window.ShouldClose() {
+        gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+        // Update
+        time := glfw.GetTime()
+        elapsed := time - previousTime
+        previousTime = time
+
+        angle += elapsed
+        model = mgl32.HomogRotate3D(float32(angle), mgl32.Vec3{0, 1, 0})
+        gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
+
         draw(vao, num, window, program)
     }
 }
 
 func draw(vao uint32, num int32, window *glfw.Window, program uint32) {
-    gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
     gl.UseProgram(program)
 
     gl.BindVertexArray(vao)
@@ -87,6 +127,8 @@ func initOpenGL() uint32 {
     gl.AttachShader(prog, vertexShader)
     gl.AttachShader(prog, fragmentShader)
     gl.LinkProgram(prog)
+
+    gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 
     gl.Enable(gl.DEPTH_TEST)
     gl.DepthFunc(gl.LESS)
