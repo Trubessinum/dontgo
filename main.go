@@ -12,30 +12,29 @@ import (
 
 var pyramidVertices = []float32{
     // front
-    0, 0.5, 0,
-    -0.5, -0.5, -0.5,
-    0.5, -0.5, -0.5,
+    0, 0.7, 0,
+    -0.7, -0.7, -0.7,
+    0.7, -0.7, -0.7,
 
     // back
-    0, 0.5, 0,
-    0.5, -0.5, 0.5,
-    -0.5, -0.5, 0.5,
+    0, 0.7, 0,
+    0.7, -0.7, 0.7,
+    -0.7, -0.7, 0.7,
 
     // left
-    0, 0.5, 0,
-    -0.5, -0.5, 0.5,
-    -0.5, -0.5, -0.5,
+    0, 0.7, 0,
+    -0.7, -0.7, 0.7,
+    -0.7, -0.7, -0.7,
 
     // right
-    0, 0.5, 0,
-    0.5, -0.5, -0.5,
-    0.5, -0.5, 0.5,
-
+    0, 0.7, 0,
+    0.7, -0.7, -0.7,
+    0.7, -0.7, 0.7,
 }
 
 func main() {
-    const width = 400
-    const height = 300
+    const width = 200
+    const height = 200
 
     runtime.LockOSThread()
 
@@ -43,8 +42,20 @@ func main() {
     defer glfw.Terminate()
 
     program := initOpenGL();
+    gl.UseProgram(program)
 
 //---------------
+
+    projection := mgl32.Perspective(
+        mgl32.DegToRad(45.0), float32(width)/height, 0.1, 10.0)
+    projectionUniform := gl.GetUniformLocation(
+        program, gl.Str("projection\x00"))
+    gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
+
+    camera := mgl32.LookAtV(
+        mgl32.Vec3{2, 1.5, 2}, mgl32.Vec3{0, -0.25, 0}, mgl32.Vec3{0, 1, 0})
+    cameraUniform := gl.GetUniformLocation(program, gl.Str("camera\x00"))
+    gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
 
     model := mgl32.Ident4()
     modelUniform := gl.GetUniformLocation(program, gl.Str("model\x00"))
@@ -97,7 +108,7 @@ func initGlfw(windowWidth int, windowHeight int) *glfw.Window {
     glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
     window, err := glfw.CreateWindow(
-        windowWidth, windowHeight, "Window", nil, nil)
+        windowWidth, windowHeight, "Pyramid", nil, nil)
     if err != nil {
         panic(err)
     }

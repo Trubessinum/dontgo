@@ -9,12 +9,14 @@ import (
 
 var vertexShaderSource string = `
     #version 410
+    uniform mat4 projection;
+    uniform mat4 camera;
     uniform mat4 model;
 
     in vec3 vp;
 
     void main() {
-        gl_Position = model * vec4(vp, 1);
+        gl_Position = projection * camera * model * vec4(vp, 1);
     }
 `
 
