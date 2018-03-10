@@ -29,3 +29,7 @@ cd dontgo
 ```
 go run main.go shader.go
 ```
+
+### 5. See the result:
+#### You should get something similar to this:
+![pyramid](https://i.imgur.com/Acopm0F.gif)
