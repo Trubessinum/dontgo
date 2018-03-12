@@ -7,7 +7,7 @@ import (
     "github.com/go-gl/gl/v4.1-core/gl"
 )
 
-var vertexShaderSource string = `
+var vertexShader string = `
     #version 410
     uniform mat4 projection;
     uniform mat4 camera;
@@ -20,11 +20,12 @@ var vertexShaderSource string = `
     }
 `
 
-var fragmentShaderSource string = `
+var fragmentShader string = `
     #version 410
     out vec4 frag_colour;
+
     void main() {
-        frag_colour = vec4(0, 1, 0, 1);
+        frag_colour = vec4(0.0, 1.0, 0.0, 1.0);
     }
 `
 

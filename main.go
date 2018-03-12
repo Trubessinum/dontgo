@@ -2,7 +2,6 @@ package main
 
 import (
     "fmt"
-    "log"
     "runtime"
 
     "github.com/go-gl/gl/v4.1-core/gl"
@@ -10,26 +9,17 @@ import (
     "github.com/go-gl/mathgl/mgl32"
 )
 
-var pyramidVertices = []float32{
-    // front
-    0, 0.7, 0,
-    -0.7, -0.7, -0.7,
-    0.7, -0.7, -0.7,
+var points = []float32{
+    -0.5, 0, 0.5,   // 0
+    0.5, 0, 0.5,    // 1
+    0.5, 0, -0.5,   // 2
+    -0.5, 0, -0.5,  // 3
+}
 
-    // back
-    0, 0.7, 0,
-    0.7, -0.7, 0.7,
-    -0.7, -0.7, 0.7,
-
-    // left
-    0, 0.7, 0,
-    -0.7, -0.7, 0.7,
-    -0.7, -0.7, -0.7,
-
-    // right
-    0, 0.7, 0,
-    0.7, -0.7, -0.7,
-    0.7, -0.7, 0.7,
+var vertices = []uint32{
+    3, 0, 1, 2,     // just for ability to define points order.
+                    // in our case it is LINE_LOOP, so it can be
+                    // 0, 1, 2, 3 - result will be the same
 }
 
 func main() {
@@ -41,7 +31,7 @@ func main() {
     window := initGlfw(width, height)
     defer glfw.Terminate()
 
-    program := initOpenGL();
+    program := initOpenGL(vertexShader, fragmentShader);
     gl.UseProgram(program)
 
 //---------------
@@ -61,10 +51,13 @@ func main() {
     modelUniform := gl.GetUniformLocation(program, gl.Str("model\x00"))
     gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
 
-//---------------
+    vao := makeVao(points, vertices)
 
-    vao := makeVao(pyramidVertices)
-    num := int32(len(pyramidVertices) / 3)
+    vertAttrib := uint32(gl.GetAttribLocation(program, gl.Str("vp\x00")))
+    gl.EnableVertexAttribArray(vertAttrib)
+    gl.VertexAttribPointer(vertAttrib, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
+
+//---------------
 
     angle := 0.0
     previousTime := glfw.GetTime()
@@ -72,7 +65,6 @@ func main() {
     for !window.ShouldClose() {
         gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-        // Update
         time := glfw.GetTime()
         elapsed := time - previousTime
         previousTime = time
@@ -81,7 +73,7 @@ func main() {
         model = mgl32.HomogRotate3D(float32(angle), mgl32.Vec3{0, 1, 0})
         gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
 
-        draw(vao, num, window, program)
+        draw(vao, int32(len(points) / 3), window, program)
     }
 }
 
@@ -89,16 +81,36 @@ func draw(vao uint32, num int32, window *glfw.Window, program uint32) {
     gl.UseProgram(program)
 
     gl.BindVertexArray(vao)
-    gl.DrawArrays(gl.TRIANGLES, 0, num)
+    gl.DrawElements(gl.LINE_LOOP, num, gl.UNSIGNED_INT, gl.PtrOffset(0))
 
     glfw.PollEvents()
     window.SwapBuffers()
 }
 
+func makeVao(points []float32, vertices []uint32) uint32 {
+    var vao uint32
+    gl.GenVertexArrays(1, &vao)
+    gl.BindVertexArray(vao)
+
+    var vbo uint32
+    gl.GenBuffers(1, &vbo)
+    gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+    gl.BufferData(
+        gl.ARRAY_BUFFER, 4*len(points), gl.Ptr(points), gl.STATIC_DRAW)
+
+    var ibo uint32
+    gl.GenBuffers(1, &ibo)
+    gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo)
+    gl.BufferData(
+        gl.ELEMENT_ARRAY_BUFFER, 4*len(vertices), gl.Ptr(vertices), gl.STATIC_DRAW)
+
+    return vao
+}
+
 func initGlfw(windowWidth int, windowHeight int) *glfw.Window {
 
     if err := glfw.Init(); err != nil {
-        log.Fatalln("failed to initialize glfw:", err)
+        panic("failed to initialize glfw")
     }
 
     glfw.WindowHint(glfw.Resizable, glfw.False)
@@ -108,7 +120,7 @@ func initGlfw(windowWidth int, windowHeight int) *glfw.Window {
     glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
     window, err := glfw.CreateWindow(
-        windowWidth, windowHeight, "Pyramid", nil, nil)
+        windowWidth, windowHeight, "Quad", nil, nil)
     if err != nil {
         panic(err)
     }
@@ -117,16 +129,16 @@ func initGlfw(windowWidth int, windowHeight int) *glfw.Window {
     return window
 }
 
-func initOpenGL() uint32 {
+func initOpenGL(vertexShaderSource string, fragmentShaderSource string) uint32 {
     if err := gl.Init(); err != nil {
         panic(err)
     }
 
-    vertexShader, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
+    vertexShader, err := compileShader(vertexShader, gl.VERTEX_SHADER)
     if err != nil {
         panic(err)
     }
-    fragmentShader, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
+    fragmentShader, err := compileShader(fragmentShader, gl.FRAGMENT_SHADER)
     if err != nil {
         panic(err)
     }
@@ -146,20 +158,4 @@ func initOpenGL() uint32 {
     gl.ClearColor(0.0, 0.0, 0.4, 1.0)
 
     return prog
-}
-
-func makeVao(points []float32) uint32 {
-    var vbo uint32
-    gl.GenBuffers(1, &vbo)
-    gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-    gl.BufferData(gl.ARRAY_BUFFER, 4*len(points), gl.Ptr(points), gl.STATIC_DRAW)
-
-    var vao uint32
-    gl.GenVertexArrays(1, &vao)
-    gl.BindVertexArray(vao)
-    gl.EnableVertexAttribArray(0)
-    gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
-
-    return vao
 }
