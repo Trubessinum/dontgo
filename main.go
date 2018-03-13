@@ -10,16 +10,32 @@ import (
 )
 
 var points = []float32{
-    -0.5, 0, 0.5,   // 0
-    0.5, 0, 0.5,    // 1
-    0.5, 0, -0.5,   // 2
-    -0.5, 0, -0.5,  // 3
+    -0.8, 0, -0.8,
+    -0.8, 0,  0.8,
+     0.8, 0,  0.8,
+     0.8, 0, -0.6,
+    -0.6, 0, -0.6,
+    -0.6, 0,  0.6,
+     0.6, 0,  0.6,
+     0.6, 0, -0.4,
+    -0.4, 0, -0.4,
+    -0.4, 0,  0.4,
+     0.4, 0,  0.4,
+     0.4, 0, -0.2,
+    -0.2, 0, -0.2,
+    -0.2, 0,  0.2,
+     0.2, 0,  0.2,
+     0.2, 0,  0.0,
+     0.0, 0,  0.0,
 }
 
+// for ability to define points order (and/or reuse them)
 var vertices = []uint32{
-    3, 0, 1, 2,     // just for ability to define points order.
-                    // in our case it is LINE_LOOP, so it can be
-                    // 0, 1, 2, 3 - result will be the same
+    // There is a functionality to reuse vertices in OpenGL with offset,
+    // I just don't remember how to do it... In this case it should be eq 1.
+    // TODO: get rid of this repeating mess
+    0,1, 1,2, 2,3, 3,4, 4,5, 5,6, 6,7, 7,8,
+    8,9, 9,10, 10,11, 11,12, 12,13, 13,14, 14,15, 15,16,
 }
 
 func main() {
@@ -73,7 +89,7 @@ func main() {
         model = mgl32.HomogRotate3D(float32(angle), mgl32.Vec3{0, 1, 0})
         gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
 
-        draw(vao, int32(len(points) / 3), window, program)
+        draw(vao, int32(len(vertices)), window, program)
     }
 }
 
@@ -81,7 +97,7 @@ func draw(vao uint32, num int32, window *glfw.Window, program uint32) {
     gl.UseProgram(program)
 
     gl.BindVertexArray(vao)
-    gl.DrawElements(gl.LINE_LOOP, num, gl.UNSIGNED_INT, gl.PtrOffset(0))
+    gl.DrawElements(gl.LINES, num, gl.UNSIGNED_INT, gl.PtrOffset(0))
 
     glfw.PollEvents()
     window.SwapBuffers()
@@ -114,13 +130,13 @@ func initGlfw(windowWidth int, windowHeight int) *glfw.Window {
     }
 
     glfw.WindowHint(glfw.Resizable, glfw.False)
-    glfw.WindowHint(glfw.ContextVersionMajor, 4)
-    glfw.WindowHint(glfw.ContextVersionMinor, 1)
+    glfw.WindowHint(glfw.ContextVersionMajor, 3)
+    glfw.WindowHint(glfw.ContextVersionMinor, 3)
     glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
     glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
     window, err := glfw.CreateWindow(
-        windowWidth, windowHeight, "Quad", nil, nil)
+        windowWidth, windowHeight, "Spiral", nil, nil)
     if err != nil {
         panic(err)
     }

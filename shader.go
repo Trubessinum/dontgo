@@ -8,7 +8,10 @@ import (
 )
 
 var vertexShader string = `
-    #version 410
+    #version 330
+
+    varying vec3 pos;
+
     uniform mat4 projection;
     uniform mat4 camera;
     uniform mat4 model;
@@ -16,16 +19,20 @@ var vertexShader string = `
     in vec3 vp;
 
     void main() {
+        pos = vp;
         gl_Position = projection * camera * model * vec4(vp, 1);
     }
 `
 
 var fragmentShader string = `
-    #version 410
+    #version 330
+
+    varying vec3 pos;
+
     out vec4 frag_colour;
 
     void main() {
-        frag_colour = vec4(0.0, 1.0, 0.0, 1.0);
+        frag_colour = vec4(pos, 1);
     }
 `
 
